@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <title>گالری تصاویر</title>
+  <style>
+    :root{--bg:#f4f6fa;--card:#fff;--ink:#172033;--muted:#697386;--line:#e4e8f0;--accent:#3157d5}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Tahoma,Arial,sans-serif}
+    header{background:linear-gradient(135deg,#101827,#233b70);color:#fff;padding:34px 20px 28px}
+    .wrap{max-width:1120px;margin:auto;padding:0 18px}
+    .brand{display:flex;align-items:center;gap:12px}.logo{width:44px;height:44px;border-radius:14px;background:#ffffff1c;display:grid;place-items:center;font-size:24px}
+    h1{font-size:clamp(24px,4vw,34px);margin:0 0 8px}.sub{margin:0;color:#d6def2;font-size:14px;line-height:1.9}
+    main{padding:24px 0 56px}.toolbar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+    input,select{font:inherit;border:1px solid var(--line);border-radius:12px;background:#fff;padding:12px 14px;min-height:46px;color:var(--ink)}
+    input{flex:1;min-width:210px}select{min-width:180px;max-width:100%}
+    .count{font-size:13px;color:var(--muted);margin:8px 0 18px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 5px 18px #14213d08}
+    .thumb{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#e8ecf4;cursor:pointer}
+    .body{padding:13px}.title{font-size:15px;font-weight:700;margin:0 0 7px}.meta{font-size:12px;color:var(--muted);margin-bottom:12px}
+    .actions{display:flex;gap:8px}.btn{border:0;border-radius:10px;padding:10px 12px;font:inherit;font-size:13px;text-decoration:none;cursor:pointer;display:inline-flex;justify-content:center;align-items:center;flex:1}
+    .primary{background:var(--accent);color:white}.secondary{background:#eef1f8;color:#26334e}
+    .empty{background:#fff;border:1px dashed #cbd3e2;border-radius:16px;padding:28px;text-align:center;color:var(--muted);line-height:1.9}
+    footer{text-align:center;color:var(--muted);font-size:12px;padding:0 18px 28px}
+    dialog{border:0;border-radius:16px;padding:0;max-width:min(94vw,1000px);max-height:92vh;background:#111827;color:#fff;box-shadow:0 20px 80px #0006}
+    dialog::backdrop{background:#050914c9}.viewer{padding:12px}.viewer img{display:block;max-width:90vw;max-height:76vh;object-fit:contain;margin:auto}.viewerbar{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 2px 0}.viewerbar strong{font-size:14px}
+    .close{border:0;background:#ffffff20;color:white;border-radius:9px;padding:9px 12px;cursor:pointer;font:inherit}
+    @media(max-width:520px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.body{padding:10px}.title{font-size:13px}.actions{flex-direction:column}.btn{width:100%}.thumb{aspect-ratio:1/1}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">▧</div>
+      <div>
+        <h1 id="siteTitle">گالری تصاویر</h1>
+        <p class="sub">مشاهده و دانلود تصاویر پرونده‌ها</p>
+      </div>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <div class="toolbar">
+    <input id="search" type="search" placeholder="جست‌وجوی نام عکس یا پرونده…" aria-label="جست‌وجو">
+    <select id="caseFilter" aria-label="انتخاب پرونده"><option value="">همه پرونده‌ها</option></select>
+  </div>
+  <p class="count" id="count" aria-live="polite"></p>
+  <section class="grid" id="gallery" aria-label="تصاویر"></section>
+  <div class="empty" id="empty" hidden>تصویری برای نمایش وجود ندارد.<br>برای اضافه کردن تصاویر، فایل <b>photos.js</b> را ویرایش کن.</div>
+</main>
+<footer>گالری تصاویر · فایل‌ها در OneDrive / SharePoint میزبانی می‌شوند.</footer>
+<dialog id="viewer">
+  <div class="viewer">
+    <img id="largeImage" alt="">
+    <div class="viewerbar">
+      <strong id="largeTitle"></strong>
+      <div style="display:flex;gap:8px">
+        <a id="largeDownload" class="btn primary" target="_blank" rel="noopener">دانلود / باز کردن فایل</a>
+        <button class="close" id="closeViewer">بستن ✕</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+<script src="photos.js"></script>
+<script>
+  const data = window.GALLERY_DATA || {title:"گالری تصاویر", photos:[]};
+  const gallery = document.getElementById("gallery");
+  const search = document.getElementById("search");
+  const filter = document.getElementById("caseFilter");
+  const count = document.getElementById("count");
+  const empty = document.getElementById("empty");
+  const dialog = document.getElementById("viewer");
+  document.getElementById("siteTitle").textContent = data.title || "گالری تصاویر";
+  const cases = [...new Set((data.photos||[]).map(p=>p.caseName).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fa'));
+  for (const name of cases) { const o=document.createElement("option"); o.value=name; o.textContent=name; filter.appendChild(o); }
+  function safeUrl(value) {
+    try { const u=new URL(value); return ["https:","http:"].includes(u.protocol) ? u.href : ""; } catch { return ""; }
+  }
+  function render(){
+    const q=search.value.trim().toLocaleLowerCase('fa');
+    const items=(data.photos||[]).filter(p=>{
+      const hay=[p.title,p.caseName,p.description].filter(Boolean).join(" ").toLocaleLowerCase('fa');
+      return (!q||hay.includes(q))&&(!filter.value||p.caseName===filter.value);
+    });
+    gallery.replaceChildren();
+    count.textContent=`${items.length} تصویر`;
+    empty.hidden=items.length!==0;
+    for(const p of items){
+      const src=safeUrl(p.imageUrl); const download=safeUrl(p.downloadUrl||p.imageUrl);
+      if(!src) continue;
+      const card=document.createElement("article");card.className="card";
+      const img=document.createElement("img");img.className="thumb";img.src=src;img.alt=p.title||"تصویر";img.loading="lazy";
+      img.addEventListener("click",()=>openViewer(p,src,download));
+      img.addEventListener("error",()=>{img.alt="تصویر بارگذاری نشد؛ لینک اشتراک‌گذاری را بررسی کنید";img.removeAttribute("src");img.style.cursor="default";});
+      const body=document.createElement("div");body.className="body";
+      const title=document.createElement("p");title.className="title";title.textContent=p.title||"بدون عنوان";
+      const meta=document.createElement("div");meta.className="meta";meta.textContent=[p.caseName,p.description].filter(Boolean).join(" · ");
+      const actions=document.createElement("div");actions.className="actions";
+      const view=document.createElement("button");view.className="btn secondary";view.textContent="مشاهده";view.addEventListener("click",()=>openViewer(p,src,download));
+      const dl=document.createElement("a");dl.className="btn primary";dl.textContent="دانلود";dl.href=download||src;dl.target="_blank";dl.rel="noopener";
+      actions.append(view,dl);body.append(title,meta,actions);card.append(img,body);gallery.append(card);
+    }
+    count.textContent=`${gallery.children.length} تصویر`;
+    empty.hidden=gallery.children.length!==0;
+  }
+  function openViewer(p,src,download){
+    document.getElementById("largeImage").src=src;
+    document.getElementById("largeImage").alt=p.title||"تصویر";
+    document.getElementById("largeTitle").textContent=p.title||"تصویر";
+    document.getElementById("largeDownload").href=download||src;
+    dialog.showModal();
+  }
+  document.getElementById("closeViewer").addEventListener("click",()=>dialog.close());
+  dialog.addEventListener("click",e=>{if(e.target===dialog)dialog.close()});
+  search.addEventListener("input",render);filter.addEventListener("change",render);
+  render();
+</script>
+</body>
+</html>
